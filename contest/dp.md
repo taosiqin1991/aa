@@ -638,49 +638,6 @@ bool dfs(vector<vector<char>>& board, string& word, int idx, int x, int y, vecto
 ```
 
 
-
-统计封闭岛屿的数量
-1）被1 包围的区域。靠边的0不能算。
-
-```cpp
-int closedIsland(vector<vector<int>>& grid){
-    if(grid.size()==0 || grid[0].size()==0 ) return 0;
-    int M = grid.size();
-    int N = grid[0].size();
-    int num = 0;
-
-    for(int i=0; i<M; i++){
-        for(int j=0; j<N; j++){
-            
-            if( grid[i][j]==0){ // find 
-                if( !dfs(grid, i, j)){
-                    num++;
-                }
-            }
-        }
-    }
-    return num; 
-    
-}
-// whether get to border
-bool dfs(vector<vector<int>>& grid, int r, int c){
-    if(r<0 || c<0 || r>=grid.size() || c>=grid[0].size()) return true;
-    
-    // 0 water, 1 land, 2 visited. we hope water.
-    if( grid[r][c]!=0) return false;
-
-    grid[r][c] = 2;
-
-    bool b1 = dfs(grid, r-1, c);
-    bool b2 = dfs(grid, r+1, c);
-    bool b3 = dfs(grid, r, c-1);
-    bool b4 = dfs(grid, r, c+1);
-    return b1 || b2 || b3 || b4;
-}
-
-```
-
-
 最大人工岛
 可以人工把填一块土。求之后的岛最大面积。
 注意超时。

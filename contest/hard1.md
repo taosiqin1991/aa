@@ -456,66 +456,6 @@ int countRangeSum(vector<int>& nums, int lower, int upper){
 ```
 
 
-493 翻转对
-树状数组和归并排序都是 nlogn，space n
-
-
-```cpp
-update(BIT,idx, val):
-    while(idx<0):
-        BIT[idx] += val
-        idx -= (idx & (-idx))
-
-query(BIT, idx):
-    sum =0
-    while(idx<BIT.size):
-        sum += BIT[idx]
-        idx += (idx & (-idx))
-
-// nlogn
-void update(vector<int>& IT, int idx, int val){
-    while(idx>0){
-        BIT[idx] += val;
-        idx -= idx &(-dix);
-    }
-}
-
-int query(vector<int>& BIT, int idx){
-    int sum =0;
-    while(idx<BIT.size()){
-        sum += BIT[idx];
-        idx += idx&(-idx);
-    }
-    return sum;
-}
-
-int reversePairs(vector<int>& nums){
-    int n = nums.size();
-    vector<int> nums_copy(nums);
-    
-    sort(nums_copy.begin(), nums_copy.end());
-    vector<int> BITS(n+1, 0);
-    int cnt = 0;
-    for(int i=0; i<n; i++){
-        cnt += query(BITS, lower_bound(nums_copy.begin(), nums_copy.end(), 2LL*nums[i]+1)-nums_copy.begin()+1);
-        update(BITS, lower_bound(nums_copy.begin(), nums_copy.end(), nums[i])-nums_copy.begin()+1, 1);
-    }
-    return cnt;
-}
-
-
-```
-
-
-```cpp
-void merge(vector<int>& A, int l, int m, int r){
-    int n1 = (m-l+1); //[l,m]
-    int n2 = (r-m); // [m+1, r]
-    
-    int l
-}
-
-```
 
 ```cpp
 

@@ -334,6 +334,8 @@ while(Q不空){
         比过来的边矮说明就可以积水，因为当前的这个边高度是当前这个包围圈的最矮高度
         将这个边放到队列中，取得高度应该是两者高度的最大值
 */
+
+// 36 ms slow
 typedef pair<int, pair<int, int>> PIII;
 class Solution {
 public:
@@ -373,6 +375,70 @@ public:
     }
 };
 
+
+```
+
+并查集，time max(mn + V)
+```cpp
+// 36 ms
+class Solution {
+public:
+    int fa[120 * 120], vis[120 * 120], sz[120 * 120];
+    int n, m;
+    int find(int x)
+    {
+        if(fa[x] == x ) return x;
+        return fa[x] = find(fa[x]);
+    }
+    bool check(int x, int y)
+    {
+        if(x < 0 || x >= n || y < 0 || y >= m) return 0;
+        return 1;
+    }
+    int trapRainWater(vector<vector<int>>& heightMap) {
+        n = heightMap.size(), m = heightMap[0].size();
+        for(int i = 0; i <= n * m; i++) fa[i] = i, sz[i] = 1;
+        sz[n * m ] = 0;
+        memset(vis, 0, sizeof vis);
+        int V = 0;
+        vector<int> pii[20010];
+        for(int i = 0; i < n; i++)
+            for(int j = 0; j < m; j++) 
+                pii[heightMap[i][j]].push_back(i * m + j),
+                V = V < heightMap[i][j] ? heightMap[i][j]: V;
+        int cnt = 0, res = 0;
+        int dir[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for(int v = 0; v < V; v++)
+        {
+            for(int i = 0; i < pii[v].size(); i++)
+            {
+                cnt++;
+                int x = pii[v][i] / m, y = pii[v][i] % m;
+                vis[x * m + y] = 1;
+                for(int k = 0; k < 4; k++)
+                {
+                    int dx = x + dir[k][0], dy = y + dir[k][1];
+                    int flag = 0;
+                    if(!check(dx, dy) || vis[dx * m + dy]) 
+                    {
+                        int fx, fy;
+                        if(!check(dx, dy)) fx = find(n * m);
+                        else fx = find(dx * m + dy);
+                        fy = find(x * m + y);
+                        if(fx == fy) continue;
+                        sz[fx] += sz[fy];
+                        fa[fy] = fx;
+                    }
+                }
+            }
+            // cout << cnt << endl;
+            res += cnt - sz[find(n * m)];
+        }
+        return res;
+    }
+};
+
+作者：zhe-ge-xian-qia-bu-tai-leng
 
 ```
 

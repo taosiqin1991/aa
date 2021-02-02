@@ -1,4 +1,105 @@
 
+28 实现 strStr()
+
+O(n)有两种方式
+Rabin-Karp，通过哈希算法实现常数时间窗口内字符串比较。
+比特位操作，通过比特掩码来实现常数时间窗口内字符串比较。
+
+time O(m+n)
+```cpp
+// kmp
+vector<int> get_next(string& p){
+    int n=p.size();
+    vector<int> next(n, 0);
+    int i=1;
+    int len=0;
+    while(i< n){  // O(n)
+    
+        if(p[i]== p[len]){
+            ++len;
+            next[i++] =len;
+        }
+        else if( len==0){  // match failed
+            next[i++]=0;
+        }
+        else{   //match failed
+            len = next[len-1];
+        }
+    }
+    return next;
+}
+
+
+int kmp(string& s, string& p){
+    vector<int> next=get_next(p);
+    int ns =s.size();
+    int np =p.size();
+    int i=0;
+    int len=0;  // j
+    while(i< ns){  // O(m)
+        if(s[i]== p[len]){ 
+            i++; 
+            len++;
+            if(len==np) return i-len; 
+        }
+        else if(len==0 ) ++i;
+        else  len= next[len-1];
+    }    
+    return -1;
+}
+
+int strStr(string s, string p){
+    if(p.size()==0) return 0;
+    return kmp(s, p);
+}n
+```
+
+1392 最长快乐前缀
+kmp
+```cpp
+string longestPrefix(string s){
+    int n = s.size();
+    vector<int> next(n, 0);
+    for(int i=1; i<n; i++){
+        int tmp = next[i-1];
+        
+        while(tmp>0 && s[tmp]!=s[i]){
+            tmp = next[tmp-1]; //
+        }
+        if(s[tmp]==s[i]) ++tmp;
+        
+        next[i] = tmp;
+    }
+    return s.substr(0, next.back()); // 
+}
+```
+
+
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+
+```cpp
+
+```
+
+```cpp
+
+```
+
+
+
+
 
 无重复字符的最长子串
 
@@ -475,54 +576,6 @@ int maxArea(vector<int>& height){
 
 
 
-最大子序和
-1) 动态规划, f[i] = max(f[i-1]+ai, ai)
-   time n, space 1
-2) 分治，time n, 类似线段树求解 LCIS问题的 pushUp操作
-
-二叉树深度为logn
-遍历二叉树上所有节点，总时间 \sum_{i=1}^{logn} 2^(i-1) = n ，递归会使用logn的栈空间。
-
-但是仔细观察「方法二」，它不仅可以解决区间 [0,n−1]，还可以用于解决任意的子区间 [l,r] 的问题。如果我们把 [0, n - 1][0,n−1] 分治下去出现的所有子区间的信息都用堆式存储的方式记忆化下来，即建成一颗真正的树之后，我们就可以在 O(logn) 的时间内求到任意区间内的答案，我们甚至可以修改序列中的值，做一些简单的维护，之后仍然可以在 O(logn) 的时间内求到任意区间内的答案，
-
-
-```cpp
-class Solution{
-public:
-    struct Status{
-        int lsum;
-        int rsum;
-        int msum;
-        int isum;
-    };
-
-    Status pushUp(Status l, Status r){
-        int isum = l.isum + r.isum;
-        
-        int lsum = max(l.lsum, l.isum + r.lsum);
-        int rsum = max(r.rsum, r.isum + l.rsum);
-        
-        int msum = max(max(l.msum, r.msum), l.rsum + r.lsum);
-        return (Status){lsum, rsum, msum, isum};
-    }
-
-    Status get(vector<int>& a, int l, int r){
-        if(l==r) return (Status){a[l], a[l], a[l], a[l]};
-
-        int m = (l+r)>>1;
-        Status lsub = get(a, l, m);
-        Status rsub = get(a, m+1, r);
-        return pushUp(lsub, rsub);
-    }
-
-    int maxSubArray(vector<int>& nums){
-        return get(nums, 0, nums.size()-1).msum;
-    }
-    
-};
-
-
-```
 
 
 

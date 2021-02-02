@@ -329,12 +329,6 @@ int shortestPathBinaryMatrix(vector<vector<int>>& grid){
 
 
 
-```cpp
-
-```
-
-
-
 最长公共子序列
 ```cpp
 int longest_common_seq_dp_two(string& str1, string& str2){
@@ -501,40 +495,124 @@ public:
 
 ```
 
-线段树能求解区间合并问题，多次询问的区间最长连续 上升序列问题，区间最大子段和问题等。
+53 最大子序和
 
+dp[i]为以nums[i]结尾的最大子序和
 ```cpp
+int maxSubArray(vector<int>& arr){
+    int n=arr.size();
+    vector<int> dp(n);
+    dp[0]=arr[0];
+
+    int res= dp[0];
+    for(int i=1; i<n; i++){
+        dp[i] = max(dp[i-1] + arr[i], arr[i]); //
+        res = max(res, dp[i]);
+    }
+    return res;
+}
 
 ```
 
 
+最大子序和
+1) 动态规划, f[i] = max(f[i-1]+ai, ai)
+   time n, space 1
+2) 分治，time n, 类似线段树求解 LCIS问题的 pushUp操作
+
+二叉树深度为logn
+遍历二叉树上所有节点，总时间 \sum_{i=1}^{logn} 2^(i-1) = n ，递归会使用logn的栈空间。
+
+但是仔细观察「方法二」，它不仅可以解决区间 [0,n−1]，还可以用于解决任意的子区间 [l,r] 的问题。如果我们把 [0, n - 1][0,n−1] 分治下去出现的所有子区间的信息都用堆式存储的方式记忆化下来，即建成一颗真正的树之后，我们就可以在 O(logn) 的时间内求到任意区间内的答案，我们甚至可以修改序列中的值，做一些简单的维护，之后仍然可以在 O(logn) 的时间内求到任意区间内的答案，
+
+
 ```cpp
+class Solution{
+public:
+    struct Status{
+        int lsum;
+        int rsum;
+        int msum;
+        int isum;
+    };
+
+    Status pushUp(Status l, Status r){
+        int isum = l.isum + r.isum;
+        
+        int lsum = max(l.lsum, l.isum + r.lsum);
+        int rsum = max(r.rsum, r.isum + l.rsum);
+        
+        int msum = max(max(l.msum, r.msum), l.rsum + r.lsum);
+        return (Status){lsum, rsum, msum, isum};
+    }
+
+    Status get(vector<int>& a, int l, int r){
+        if(l==r) return (Status){a[l], a[l], a[l], a[l]};
+
+        int m = (l+r)>>1;
+        Status lsub = get(a, l, m);
+        Status rsub = get(a, m+1, r);
+        return pushUp(lsub, rsub);
+    }
+
+    int maxSubArray(vector<int>& nums){
+        return get(nums, 0, nums.size()-1).msum;
+    }
+    
+};
+
 
 ```
 
+面试 17.24 最大子矩阵
 
-最长上升子序列
+确定上下行号之后，问题就转化为“一维数组的最大连续子序列”
+dp, time mmn, space n
+
+brute force：遍历每个子矩阵，通过预先算出矩阵中每个位置到左上顶点的和，用O(1)的时间可以算出该子数组的和，时间复杂度O((MN)^2)
+
+优化：给定r1,r2求之间的最大子矩阵，可以按照求最大子数组的方式，把
+r1,r2间的每个竖条当成一个数组元素来求。时间复杂度O((M)^2 * N)
+可以让M是较短的边
+
 ```cpp
+// 232 ms
+vector<int> getMaxMatrix(vector<vector<int>>& mat){
+    if(mat.size()==0 || mat[0].size()==0) return {};
+    int m = mat.size();
+    int n=mat[0].size();
+    
+    vector<int> res(4);
+    int sum=0;
+    int max_sum=INT_MIN;
+    int k_bg;
+    for(int i=1; i<=m; i++){ // row
+        vector<int> prefix(n+1, 0);
+        for(int j=i; j<=m; j++){ // row
 
-```
+            for(int k=1; k<=n; k++){
+                prefix[k] += mat[j-1][k-1]; //
+            }
+            sum=0;
+            for(int k=1; k<=n; k++){
+                if(sum <=0){
+                    sum=0;
+                    k_bg =k;
+                }
 
-
-
-最长上升子序列
-```cpp
-
-```
-
-
-
-最长上升子序列
-```cpp
-
-```
-
-
-最长上升子序列
-```cpp
+                sum += prefix[k];
+                if(sum > max_sum){
+                    max_sum = sum;
+                    res[0] = i-1;
+                    res[1] = k_bg -1;
+                    res[2] = j-1;
+                    res[3] = k-1;
+                }
+            }
+        }
+    }
+    return res;
+}
 
 ```
 
@@ -638,41 +716,38 @@ bool dfs(vector<vector<char>>& board, string& word, int idx, int x, int y, vecto
 ```
 
 
-最大人工岛
+827 最大人工岛
 可以人工把填一块土。求之后的岛最大面积。
 注意超时。
 1) 对于每个0，可以将其变成1， 然后统计这个连通块大小。
 最大面积肯定出现在跟这个0有关的连通块面积上。
 
 ```cpp
+// wsyisgod
+// dfs
 class Solution{
 public:
-    int largestIsland(vector<vector<int>>& grid){
-        n = grid.size();
-        
-        for(int i=0; i<n; i++){
-            for(int j=0; j<n; ++j){
-                if( grid[i][j]==1){
-                    
-                }
+vector<vector<int>> m;
+int cnt;
+int res;    
+
+int largestIsland(vector<vector<int>>& grid){
+    n = grid.size();
+    
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n; ++j){
+            if( grid[i][j]==1){
+                
             }
         }
     }
+}
 
-
-
-private:
-    int n;
-    int color = 2;
-    int max_area = 0;
-    vector<vector<int>> dir={{1,0}, {-1, 0}, {0,1},{0,-1}};
-    unordered_map<int, int> m; // color area
-
-    
+void dfs(vector<vector<int>>& m, int i, int j){
 
 }
 
-
+};
 ```
 
 最长上升子序列
@@ -851,168 +926,6 @@ KMP 算法虽然有着良好的理论时间复杂度上限，但大部分语言�
 ```
 
 
-### 线段树
-time O(nlogn), space n
-
-
-699 掉落的方块
-```cpp
-class SegmentTree(object):
-    def __init__(self, N, update_fn, query_fn):
-        self.N = N
-        self.H = 1
-        while i<< self.H <N:
-            self.M += 1
-
-        self.update_fn = update_fn
-        self.query_fn = query_fn
-        self.tree = [0] *(2*n)
-        self.lazy = [0] *N
-
-    def _apply(self, x, val):
-        self.tree[x] = self.update_fn(self.tree[x])
-        if x < self.N:
-            self.lazy[x] = self.update_fn(self.lazy[x], val)
-        
-    def _pull(self, x):
-        while x>1:
-            x/=2
-            self.tree[x] = self.query_fn(self.tree[x*2], self.tree[x*2+1])
-            self.tree[x] = self.update_fn(self.tree[x], self.lazy[x])
-            
-    def _push(self, x):
-        for h in xrange(self.H, 0 , -1):
-            y = x>>h
-            if self.lazy[y]:
-                self._apply( y*2, self.lazy[y])
-                self._apply( y*2+1, self.lazy[y])
-                self.lazy[y] = 0
-
-    def update(self, L, R, h):
-        L += self.N
-        R += self.N
-        L0, R0 = L, R
-        while L <=R:
-            if L & 1:
-                self._apply(L, h)
-                L += 1
-            if R & 1==0:
-                self._apply(R, h)
-                R -=1
-            L /=2;R /=2
-        self._pull(L0)
-        self._pull(R0)
-        
-    def query(self, L, R):
-        L += self.N
-        R += self.N
-        self._push( L)
-        self._push( R)
-        ans = 0
-        
-        while L <=R:
-            if L & 1:
-                ans = self.query_fn( ans, self.tree[L])
-                L += 1
-            if R & 1==0:
-                ans = self.query_fn( ans, self.tree[R])
-                R -=1
-            L /=2; R/=2
-        return ans
-
-class Solution(object):
-    def falling_squares(self, pos):
-        tree = Segment( len(index), max, max)
-        best = 0
-        ans = []
-
-        for left,size in pos:
-            L,R = index[left], index[left+ size-1]
-            h = tree.query(L, R) + size
-            tree.update(L, R, h)
-            best = max( best, h)
-            ans.append( best)
-
-        return ans
-            
-```
-
-
-
-850 矩形面积
-
-```python
-global X
-X = set()
-
-class Node(object):
-    def __init__(self, start, end, X):
-        self.start = start
-        self.end = end
-        self.total = 0
-        self.count = 0
-        self._left = None
-        self._right = None
-
-    @property
-    def mid(self):
-        return self.start + (self.end-self.start)/2
-
-    
-    def left(self):
-        self._left = self._left or Node(self.start, self.mid)
-        return self._left
-        
-    def right(self):
-        self._right = self._right or Node(self.mid, self.end)
-        return self._right
-
-    def update(self, i, j, val):
-        if i>=j: return 0
-        
-        if self.start==i and self.end==j:
-            self.count += val
-        else:
-            self.left.update(i, mid(self.mid, j), val)
-            self.right.update( max(self.mid, i), j, val)
-        
-        if self.count >0:
-            self.total = X[self.end] - X[self.start]
-        else: 
-            self.total = self.left.total + self.right.total
-        
-        return self.total
-
-class Solution(object):
-    def rectangle_area(self, rectangle):
-        OPEN, CLOSE = 1, -1
-        events = []
-
-        for x1, y1, x2, y2 in rectangles:
-            events.append( (y1, OPEN, x1, x2))
-            events.append( (y2, CLOSE, x1, x2))
-            X.append(x1)
-            X.append(x2)
-        events.sort()
-        
-        X = sorted(X)
-        Xi = {x: i for i, x in enumerate(X)}
-        
-        active = Node(0, len(X)-1)
-        ans = 0
-        cur_x_sum = 0
-        cur_y = events[0][0]
-        
-        for y, typ, x1, x2 in events:
-            ans += cur_x_sum  * (y- cur_y)
-            cur_x_sum = active.update( Xi[x1], Xi[x2], typ)
-            cur_y = y
-
-        return ans % (10**9 + 7)
-    
-
-```
-
 
 
 ### 并查集
@@ -1020,28 +933,9 @@ class Solution(object):
 
 ```
 
-
-前k 个 高频词
-可以用堆排序来求解，或者用字典树TrieTree
+692 前k 个 高频词
 
 
-1）排序好后是NlogN
-2）堆排序是 Nlogk
-
-
-692
-```python
-def topK_freq(self, words, k):
-    count = collections.Counter( words)
-    heap = [ (-freq,word) for word,freq in count.items()]
-    
-    heapq.heapify( heap)
-    return [ heapq.heappop( heap)[1] for _ in range(k)]
-```
-
-
-
-692
 ```cpp
 struct TrieNode{
     bool is_end;
@@ -1138,82 +1032,7 @@ private:
 
 ```
 
-745 前缀和后缀搜索
-解决方案
-1）成对的单词查找树
-2）后缀修饰的单词查找树
-两种time 都是 NK^2 + QK, space NK^2
 
-```python
-Trie = lambda: collections.defaultdict(Trie)
-WEIGHT = False
-
-# class WordFilter(object):
-#     def __init__(self, words):
-#         pass
-
-#     def f(self, prefix, suffix):
-#         pass
-
-class WordFilter(object):
-    def __init__(self, words):
-        self.trie = Trie()
-
-        for weight,word in enumerate(words):
-            cur = self.trie
-            cur[WEIGHT] = weight
-            for i,x in enumerate(word):
-                # put all prefixs and suffixs
-
-                tmp = cur
-                for letter in word[i:]:
-                    tmp = tmp[letter, None]
-                    tmp[WEIGHT] = weight
-                # advance letters
-                cur = cur[x, word[~i]]
-                cur[WEIGHT] = weight
-                
-    def search(self, prefix, suffix):
-        cur = self.trie
-        for a,b in map(None, prefix, suffix[::-1]):
-            if (a,b) not in cur:
-                return -1
-            cur = cur[a, b]
-        return cur[WEIGHT]
-
-```
-
-
-```python
-```
-
-```py
-Trie = lambda: collections.defaultdict(Trie)
-WEIGHT = False
-
-class WordFilter(object):
-    def __init__(self, words):
-        self.trie = Trie()
-        
-        for weight,word in enumerate(words):
-            word += "#"
-            for i in range( len(word)):
-                cur = self.trie
-                cur[WEIGHT] = weight
-                for j in range(i, 2*len(word)-1):
-                    cur = cur[word[j % len(word)]]
-                    cur[WEIGHT] = weight
-    
-    def f(self, prefix, suffix):
-        cur = self.trie
-        for letter in suffix + "#" + prefix:
-            if letter not in cur:
-                return -1
-            cur = cur[letter]
-        return cur[WEIGHT]
-
-        
-```
 
 
 目标和 494

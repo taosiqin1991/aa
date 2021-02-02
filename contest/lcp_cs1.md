@@ -173,7 +173,7 @@ void dfs(int id){
 // zkw tree
 源代码bug  看看数组访问越界
 ```cpp
-// bug heap-buffer-overflow
+// bug  bug
 #define mAX 50001
 #define ll long long
 #define mod(v) ((v)%(1000000007)) // 1e9+7
@@ -296,7 +296,7 @@ vector<int> bonus(int n, vector<vector<int>>& ls, vector<vector<int>>& opt) {
 
 
 // raw code 
-typedef long long ll;
+#define ll long long
 class zkw_tree
 {
 private:
@@ -418,6 +418,39 @@ public:
 
 
 ```
+
+
+LCP 10 二叉树任务调度
+
+time n, space n
+```cpp
+double minimalExecTime(TreeNode* root) {
+    auto p = dfs(root);
+    return p.first - p.second;
+}
+
+pair<int, double> dfs(TreeNode* root){
+    if(!root) return {0, 0.0};
+    auto l = dfs(root->left);
+    auto r = dfs(root->right);
+    
+    int a = l.first;
+    int c = r.first;
+    double b = l.second;
+    double d = r.second;
+    int tot = a + c + root->val;
+    
+    if((c-2*d<=a && a<=c) || (a-2*b<=c && c<=a)){ // why
+        return {tot, (a+c)/2.0};
+    }
+    if(a-2*b>c){
+        return {tot, b+c};
+    }
+    return {tot, a+d};
+
+}
+```
+
 
 
 LCP 13 寻宝
@@ -886,24 +919,102 @@ public:
 ```
 
 LCP 16 游乐园的游览计划
+在图中找到两个三角形（边可以重复），两个三角形至少需要一个点相连，使得最终所有点的权值和最大。
+
+官方 time m^(3/2), space m
 
 
 根据度数分段+权重最大的前三条边至少取一条
 
-或者 位运算 bitset O(n^2/32)
-
-https://leetcode-cn.com/problems/you-le-yuan-de-you-lan-ji-hua/solution/gen-ju-du-shu-fen-duan-quan-zhong-zui-da-de-qian-s/
+priority_queue 大顶堆。top元素最大。
+edges 处都加上引用，能将time 从 1010 ms 减少到 390 ms
 
 
 ```cpp
+// 390 ms
+int maxWeight(vector<vector<int>>& edges, vector<int>& val) {
+    int n = val.size();
+    int m = edges.size();
+    vector<unordered_map<int, int>> adj(n);  // second, id
+    // weight desc, time mlogm
+    sort(edges.begin(), edges.end(), [&](vector<int>& a, vector<int>& b){
+        return val[a[0]] + val[a[1]] > val[b[0]]+val[b[1]];
+    });
+    int res=0;
 
-int maxWeight(vector<vector<int>>& edges, vector<int>& value) {
+    int id=0;
+    for(auto& e: edges){  // &
+        adj[e[0]][e[1]] =id;
+        adj[e[1]][e[0]] =id;
+        id++;
+    }
+    for(int i=0; i<n; i++){
+        unordered_map<int, int>& s= adj[i];
+        vector<int> pos;
+        int ns= s.size();
 
+        if( ns * ns <=m){  // degree < sqrt(m)
+            for(auto [j, ji]: s){
+                for(auto [k, ki]: s){
+                    if(j!=k && adj[j].count(k)>0 ){
+                        pos.emplace_back( adj[j][k]); // edge j-k
+                    }
+                }
+            }
+        }
+        else{ // degree > sqrt(m)
+            int j=0;
+            for(auto& e: edges){
+                int u =e[0];
+                int v =e[1];
+                if( s.count(u)>0 && s.count(v)>0 ){
+                    pos.emplace_back(j);
+                }
+                j++;
+            }
+        }
+        // id smaller, weight bigger.
+        priority_queue<int> pq;
+        for(int j: pos){
+            if(pq.size()< 3 || j< pq.top()) pq.push(j); // 
+            if(pq.size()>3 ) pq.pop();
+        }
+        while( !pq.empty()){
+            auto& e = edges[ pq.top()];
+            int x = e[0];
+            int y =e[1];
+            int sum= val[i] + val[x] + val[y]; //
+            pq.pop();
+            // other edge
+            for(int j: pos){
+                auto& b= edges[j];
+                int u=b[0];
+                int v=b[1];
+                int cur=sum;
+                if(u!=x && u!=y) cur+= val[u];
+                if(v!=x && v!=y) cur+= val[v];
+                res = max(res, cur);
+            }
+        }
+    }
+    return res;
 }
 ```
 
-```cpp
 
+LCP 24 数字游戏
+
+维护中位数，time nlogn, space n
+两个优先队列来实时维护中位数
+
+```cpp
+typedef long long ll;
+static constexpr int mod=1e9+7;
+vector<int> numsGame(vector<int>& arr){
+    int n=arr.size();
+    if(n==1) return {0};
+    
+}
 ```
 
 ```cpp

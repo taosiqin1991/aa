@@ -25,8 +25,17 @@ bool xorGame(vector<int>& nums) {
 
 ```
 
-```cpp
+761 特殊的二进制序列
 
+找山谷问题
+对于栈 stack_0，遍历输入 S，每遇到一个'1'就入栈当前位置，每遇到一个'0'就出栈。
+
+https://leetcode-cn.com/problems/special-binary-string/solution/c-0ms-63mb-fei-di-gui-lei-bi-yu-zhao-shan-gu-by-ch/
+
+```cpp
+string makeLargestSpecial(string s){
+
+}
 ```
 
 ```cpp

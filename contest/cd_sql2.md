@@ -321,71 +321,11 @@ GROUP BY id
 
 ```
 
-1159 市场分析
-
-
-把过滤条件写在连接条件，可以减少一次子查询
-
-```sql
--- 840 ms best
-select user_id as seller_id, if(favorite_brand=item_brand, 'yes', 'no') as 2nd_item_fav_brand
-from users u
-left join(
-    select seller_id, item_brand, rank()over(partition by seller_id order by order_date) as rk
-    from orders o
-    join items i on o.item_id=i.item_id
-    order by seller_id, order_date
-) t1
-on u.user_id = t1.seller_id and t1.rk=2;
-
-```
-
-MySQL 中，使用 @ 来定义一个变量。比如：@a。
-MySQL 中，使用 := 来给变量赋值。比如： @a := 123，表示变量 a 的值为 123。
-MySQL 中，if(A, B, C) 表示如果 A 成立， 那么执行并返回 B，否则执行并返回 C。
-
-
-找到每一个用户按日期顺序卖出的第二件商品的品牌
-得到用户卖出的第二件商品的品牌后需要和用户最爱的品牌比较
-
-```sql
--- 1130 ms
-select user_id seller_id, if(favorite_brand = item_brand, 'yes', 'no') 2nd_item_fav_brand
-from users left join (
-    select o1.seller_id, item_brand
-    from orders o1 
-    join orders o2
-    on o1.seller_id = o2.seller_id
-    join items i
-    on o1.item_id = i.item_id
-    group by o1.order_id
-    having sum(o1.order_date > o2.order_date) = 1
-) tmp
-on user_id = seller_id
 
 
 
 
--- bug
-select user_id as seller_id, if (r2.item_brand is null || r2.item_brand != favorite_brand, "no", "yes") as 2nd_item_fav_brand
-from users
-left join (
-    select r1.seller_id, items.item_brand from (
-        select 
-            @rk := if (@seller = a.seller_id, @rk + 1, 1) as rank,
-            @seller := a.seller_id as seller_id, 
-            a.item_id
-        from (
-            select seller_id, item_id
-            from orders 
-            order by seller_id, order_date
-        ) a, (select @seller := -1, @rk := 0) b) r1
-    join items 
-    on r1.item_id = items.item_id
-    where r1.rank = 2
-) r2 on user_id = r2.seller_id;
 
-```
 
 
 

@@ -84,6 +84,161 @@ public:
 };
 ```
 
+
+295 数据流中的中位数
+
+简单排序 nlogn + 1 = nlogn, space n
+插入排序  n + logn = n
+两个堆, 5*logn + 1 = logn
+multiset和双指针, logn + 1 = logn (best)
+space all n
+
+单指针最快。
+双指针比单指针容易写，容易调试。
+```cpp
+class medianFinder{
+private:
+    multiset<int> data;
+    multiset<int>::iterator lo_mid, hi_mid;
+    
+public:
+    medianFinder():lo_mid(data.end()), hi_mid(data.end()){
+
+    }
+
+    void addNum(int num){
+        const int n = data.size();
+        data.insert(num);
+        
+        if(!n){ // first element insert
+            lo_mid = data.begin();
+            hi_mid = data.begin();
+        }
+        else if( n&1 ){ // odd
+            if(num<*lo_mid) lo_mid--;
+            else hi_mid++;
+
+        }
+        else{ // even
+            if(num>*lo_mid && num<*hi_mid){
+                lo_mid++;
+                hi_mid--;
+            }
+            else if(num>= *hi_mid){
+                lo_mid++;
+            }
+            else{ // num<= lo< hi
+                lo_mid = --hi_mid;
+            }
+        }
+    }
+
+    double findmedian(){
+        return (*lo_mid + *hi_mid)*0.5;
+    }
+};
+
+```
+
+```cpp
+class medianFinder{
+private:
+    priority_queue<int> lo; // max heap
+    priority_queue<int, vector<int>, greater<int>> hi; // min heap
+    
+public:
+    void addNum(int num){
+        lo.push(num);
+        
+        hi.push(lo.top());
+        lo.pop();
+        
+        if(lo.size()< hi.size()){
+            lo.push( hi.top());
+            hi.pop();
+        }
+
+    }
+    double findmedian(){
+        return lo.size()> hi.size()? (double) lo.top(): (lo.top()+hi.top())*0.5;
+    }
+};
+```
+
+
+// multiset insert logn, find O(1)
+```cpp
+class medianFinder{
+private:
+    multiset<int> data;
+    multiset<int>::iterator mid;
+    
+public:
+    medianFinder():mid(data.end()){
+
+    }
+
+    void addNum(int num){
+        const int n = data.size();
+        data.insert(num);
+        
+        if(!n){ // first element insert
+            mid = data.begin();
+        }
+        else if(num< *mid){
+            mid = (n&1? mid: prev(mid));
+        }
+        else{
+            mid = (n&1? next(mid): mid);
+        }
+    }
+
+    double findmedian(){
+        const int n = data.size();
+        return (*mid + *next(mid, n%2-1))*0.5;
+    }
+};
+
+```
+
+```cpp
+class medianFinder{
+private:
+    vector<int> store;
+
+public:
+    void addNum(int num){
+        if(store.empty()) store.push_back(num);
+        else store.insert(lower_bound(store.begin(), store.end(), num), num);  // logn + n
+    }
+
+    double findmedian(){
+        sort((store.begin(), store.end()));
+        int n = store.size();
+        return (n&1? store[n/2]: (store[n/2]+store[n/2-1])*0.5);
+    }
+};
+```
+
+
+```cpp
+// bad
+vector<double> stone;
+
+void addNum(int num){
+    store.push_back(num);
+}
+
+double findmedian(){
+    sort((store.begin(), store.end()));
+    int n = store.size();
+    return (n&1? store[n/2]: (store[n/2]+store[n/2-1])*0.5);
+}
+
+```
+
+
+
 1656 设计有序流
 
 ```cpp

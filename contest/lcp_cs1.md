@@ -455,72 +455,231 @@ pair<int, double> dfs(TreeNode* root){
 
 LCP 13 寻宝
 
+bfs + 状压dp 求解哈密尔顿路径
 
-bfs + 状压dp求解hamilton路径
+["MMMMM","MS#MM","MM#TO"]
 
-bfs time O(mn)
-compute tsDist arr O(pqmn)
-compute ttDist arr O(pqq)
-dp O(q*q * 2^q)
-
-
-
-time O(ms + mmo + mm*2^m)
-space O(s+bs + m*2^m)
+["......", "M....M", ".M#...", "....M.", "##.TM.", "...O..", ".S##O.", "M#..M.", "#....."]
 
 ```cpp
-int minimalSteps(vector<string>& maze){
-    
-}
-
-```
-
-https://leetcode-cn.com/problems/xun-bao/solution/bfs-zhuang-tai-ya-suo-dp-by-haozheyan97/
-
-```cpp
-struct Point{
-    int x;
-    int y;
-    Point(int x_, int y_):x(x_), y(y_){}
-    void print(){
-        printf("%d %d\n", x, y);
-    }
-};
+// bug 
+const int INF = 0x3f3f3f;
 
 class Solution{
 public:
-    static const int maxn = 102;
-    int dist[maxn][maxn], vis[maxn][maxn];
-    Point q[maxn*maxn], S, T, puzzle[20],stone[50];
+const int dir[5]={-1,0,1,0,-1};
+int cnt=0;
+int id_cnt=0;
+unordered_map<int, int> id;
+int m;
+int n;
 
-    int distS[50], distT[50], distm[20][50], distBm[20][20];
-    int dp[1<<16][16];
-    
-    int dx[4] = {1, 0, -1, 0};
-    int dy[4] = {0, 1, 0, -1};
+void bfs(vector<string>& maze, vector<vector<int>>& dist, int i ,int j){
+    queue<pair<int, pair<int, int>>> q; // shortest_dist to point
+    dist[i][j]=0;
+    q.push( {0, {i,j}}); //
 
-    void bfs(vector<string>& maze, int& n, int& m, Point start){
+    while(q.size()){
+        auto& e =q.front();
+        q.pop();
         
+        int len=e.first;
+        int ei = e.second.first;
+        int ej = e.second.second;
+        for(int k=0; k<4; k++){
+            int ki=ei +dir[k];
+            int kj=ej +dir[k+1];
+            if(ki<0 || kj<0 || ki>=m || kj>=n) continue;
+            if(maze[ki][kj]=='#') continue;  // maze
+            if(dist[ki][kj] != INF) continue; // visited
+            
+            dist[ki][kj] = len+1;
+            q.push( {len+1, {ki, kj}});
+        }
+    }
+}
+
+int minimalSteps(vector<string>& maze){
+    if(maze.size()==0 || maze[0].size()==0) return 0;
+    m = maze.size();
+    n = maze[0].size();
+    int fi=0;
+    int fj=0;
+    int id_s=0;
+
+    vector<vector<int>> g(m, vector<int>(n));
+    for(int i=0; i<m; i++){
+        for(int j=0; j<n; j++){
+            g[i][j] = cnt;
+            if(maze[i][j]=='S' || maze[i][j]=='M'){
+                if(maze[i][j]=='S')  id_s = id_cnt;
+                id[id_cnt++] =cnt; //
+            }
+            else if(maze[i][j]=='T'){
+                fi=i; fj=j;
+            }
+
+            cnt++;
+        }
     }
 
-    int minimalSteps(vector<string>& maze){
-        int n = maze.size();
-        int m = maze[0].size();
-        int curp;
-        int curs;
-        curp = curs = 0;
-        
-        for(int i=0; i<n; i++){
-            for(int j=0; j<m; j++){
-                if(maze[i][j]=='S') S = Point(i,j);
-                if(maze[i][j]=='T') T = Point(i,j);
-                if(maze[i][j]=='m') puzzle[curp++] = Point(i,j);
-                if(maze[i][j]=='O') stone[curs++] = Point(i,j);
+    vector<vector<int>> d(id_cnt, vector<int>(id_cnt, INF)); // adj of S/M
+    for(int i=0; i<id_cnt; i++) d[i][i]=0;
+    for(int i=0; i<m; i++){
+        for(int j=0; j<n; j++){
+            // M > O -> M
+            if(maze[i][j]=='O'){
+                vector<vector<int>> dist(m, vector<int>(n, INF));
+                bfs(maze, dist, i, j);
+
+                for(int u=0; u<id_cnt; u++){ // M -> O->M
+                    for(int v=u+1; v<id_cnt; v++){
+                        int p1=id[u]; int p2=id[v]; // two points
+                        //
+                        int x1 =p1/n; int y1 =p1%n;
+                        int x2 =p2/n; int y2 =p2%n;
+                        d[v][u]=d[u][v]= min(d[u][v], dist[x1][y1]+dist[x2][y2]); //
+                    }
+                }
             }
         }
     }
 
+    vector<vector<int>> dist_t(m, vector<int>(n, INF));
+    bfs(maze, dist_t, fi, fj);
+    int res=INF;
+    
+    vector<vector<int>> f(1<<id_cnt, vector<int>(id_cnt, INF));
+    f[1<<id_s][id_s]=0;
+    // cout << id_cnt << endl;
+
+    for(int i=0; i<(1<<id_cnt); i++){ // all state
+        for(int j=0; j<id_cnt; j++){  // all rest point
+            if( (i>>j) & 1){
+                for(int k=0; k<id_cnt; k++){
+                    
+                    if(!(i>>k & 1) ){ // this rest point can't be reached.
+                        f[i|(1<<k)][k] =min(f[i|(1<<k)][k], f[i][j]+d[j][k]);
+                    }
+                }
+            }
+        }
+    }
+    for(int j=0; j<id_cnt; j++){
+        int p=id[j];
+        int x=p/n; int y=p%n;
+        res = min(res, f[(1<<id_cnt)-1][j] + dist_t[x][y]); //
+    }
+    return res>=INF? -1: res;
+}
 };
+```
+
+
+```cpp
+// ok
+const int INF = 0x3f3f3f / 2;
+class Solution {
+public:
+int cnt = 0;
+int id_cnt = 0;
+unordered_map<int, int> id;
+int n, m;
+const int dir[5]={-1,0,1,0,-1};
+
+void bfs(vector<string>& maze, vector<vector<int>>& dist, int x, int y)
+{
+    queue<pair<int, pair<int, int>>> q;
+    dist[x][y] = 0;
+    q.push({0, {x, y}});
+
+    while (q.size())
+    {
+        int dx[] = {0, 1, 0, -1}, dy[] = {1, 0, -1, 0};
+        auto t = q.front();
+        q.pop();
+
+        int len = t.first;
+        int xx = t.second.first, yy = t.second.second;
+        for (int i = 0; i < 4; i ++ )
+        {
+            int a = xx + dx[i], b = yy + dy[i];
+            if (a < 0 || a >= n || b < 0 || b >= m) continue;
+            if (maze[a][b] == '#') continue;
+            if (dist[a][b] != INF) continue;
+            dist[a][b] = len + 1;
+            q.push({len + 1, {a, b}});
+        }
+    }
+}
+
+
+int minimalSteps(vector<string>& maze) {
+    n = maze.size(), m = maze[0].size();
+    int fi = 0, fj = 0;
+    int id_s = 0;
+
+    vector<vector<int>> g(n, vector<int>(m));
+    for (int i = 0; i < n; i ++ )
+        for (int j = 0; j < m; j ++ )
+        {
+            g[i][j] = cnt;
+            if (maze[i][j] == 'S' || maze[i][j] == 'M')
+            {
+                if (maze[i][j] == 'S') id_s = id_cnt;
+                id[id_cnt ++ ] = cnt;
+            }
+            else if (maze[i][j] == 'T')
+                fi = i, fj = j;
+            cnt ++ ;
+        }
+    
+    vector<vector<int>> d(id_cnt, vector<int>(id_cnt, INF));
+    for (int i = 0; i < id_cnt; i ++ )  d[i][i] = 0;
+
+    for (int i = 0; i < n; i ++ )
+        for (int j = 0; j < m; j ++ )
+            if (maze[i][j] == 'O')
+            {
+                vector<vector<int>> dist(n, vector<int>(m, INF));
+                bfs(maze, dist, i, j);
+
+                for (int u = 0; u < id_cnt; u ++ )
+                    for (int v = u + 1; v < id_cnt; v ++ )
+                    {
+                        int p1 = id[u], p2 = id[v];
+                        int x1 = p1 / m, y1 = p1 % m;
+                        int x2 = p2 / m, y2 = p2 % m;
+
+                        d[v][u] = d[u][v] = min(d[u][v], dist[x1][y1] + dist[x2][y2]);
+                    }
+            }
+
+    vector<vector<int>> dist_t(n, vector<int>(m, INF));
+    bfs(maze, dist_t, fi, fj);
+    int res = INF;
+
+    vector<vector<int>> f(1 << id_cnt, vector<int>(id_cnt, INF));
+    f[1 << id_s][id_s] = 0;
+
+    for (int i = 0; i < 1 << id_cnt; i ++ )
+        for (int j = 0; j < id_cnt; j ++ )
+            if (i >> j & 1)
+                for (int k = 0; k < id_cnt; k ++ )
+                    if (!(i >> k & 1))
+                        f[i | (1 << k)][k] = min(f[i | (1 << k)][k], f[i][j] + d[j][k]);
+    
+    for (int j = 0; j < id_cnt; j ++ )
+    {
+        int p = id[j];
+        int x = p / m, y = p % m; 
+        res = min(res, f[(1 << id_cnt) - 1][j] + dist_t[x][y]);
+    }
+    if (res >= INF) return -1;
+    else return res;
+}    
+};
+
 
 ```
 
@@ -669,157 +828,238 @@ public:
 
 ```
 
-295 数据流中的中位数
+LCP 15 游乐园的迷宫
 
-简单排序 nlogn + 1 = nlogn, space n
-插入排序  n + logn = n
-两个堆, 5*logn + 1 = logn
-multiset和双指针, logn + 1 = logn (best)
-space all n
+凸包 + 叉积
 
-单指针最快。
-双指针比单指针容易写，容易调试。
 ```cpp
-class medianFinder{
-private:
-    multiset<int> data;
-    multiset<int>::iterator lo_mid, hi_mid;
+// 108 ms defeat 77%
+using ll=long long;
+struct Point{
+    ll x;
+    ll y;
+    Point operator -(const Point& p){
+        return {x-p.x, y-p.y};
+    }
     
-public:
-    medianFinder():lo_mid(data.end()), hi_mid(data.end()){
-
-    }
-
-    void addNum(int num){
-        const int n = data.size();
-        data.insert(num);
-        
-        if(!n){ // first element insert
-            lo_mid = data.begin();
-            hi_mid = data.begin();
-        }
-        else if( n&1 ){ // odd
-            if(num<*lo_mid) lo_mid--;
-            else hi_mid++;
-
-        }
-        else{ // even
-            if(num>*lo_mid && num<*hi_mid){
-                lo_mid++;
-                hi_mid--;
-            }
-            else if(num>= *hi_mid){
-                lo_mid++;
-            }
-            else{ // num<= lo< hi
-                lo_mid = --hi_mid;
-            }
-        }
-    }
-
-    double findmedian(){
-        return (*lo_mid + *hi_mid)*0.5;
+    ll operator *(const Point& p){
+        return x*p.y - y*p.x; // cross mult
     }
 };
 
+vector<int> visitOrder(vector<vector<int>>& points, string dir){
+    int n=points.size();
+    vector<int> res;
+    vector<Point> vp;
+    vector<int> vis(n, 0);
+    for(auto& e: points) vp.push_back({e[0], e[1]});
+    
+    int k=0;
+    for(int i=1; i<n; i++){
+        if(vp[i].x < vp[k].x)  k=i;
+    }
+    res.push_back(k);
+    vis[k]=1;
+    
+    for(int i=0; i<n-2; i++){
+        int t=-1;
+        for(int j=0; j<n; j++){
+            if(vis[j]) continue;
+            if(t==-1) t=j;
+            else{
+                if(dir[i]=='L'){
+                    if( (vp[t]-vp[k])*(vp[j]-vp[k])<0 ) t=j;
+                }
+                else{
+                    if( (vp[t]-vp[k])*(vp[j]-vp[k])>0) t=j;
+                }
+            }
+        }
+        k =t;
+        vis[t]=1;
+        res.push_back(t);
+    }
+    for(int i=0; i<n; i++){
+        if(!vis[i]) res.push_back(i);
+    }
+    return res;
+}
 ```
 
-```cpp
-class medianFinder{
-private:
-    priority_queue<int> lo; // max heap
-    priority_queue<int, vector<int>, greater<int>> hi; // min heap
-    
-public:
-    void addNum(int num){
-        lo.push(num);
-        
-        hi.push(lo.top());
-        lo.pop();
-        
-        if(lo.size()< hi.size()){
-            lo.push( hi.top());
-            hi.pop();
-        }
+LCP 最小跳跃次数
 
+bfs, time n, space n
+dp,  time n, space n
+
+[2,5,1,1,1,1]
+
+```cpp
+// 220 ms
+int minJump(vector<int>& jump){
+    int n=jump.size();
+    vector<int> dp(n, 0);
+    for(int i=n-1; i>=0; i--){
+        if(jump[i]+i>=n ) dp[i]=1;
+        else  dp[i] = dp[jump[i]+i ]+1; // 
+        
+        for(int j=i+1; j<n && j<i+jump[i] && dp[j]>dp[i]; j++){ // 
+            dp[j] =dp[i]+1;
+        }
     }
-    double findmedian(){
-        return lo.size()> hi.size()? (double) lo.top(): (lo.top()+hi.top())*0.5;
-    }
-};
+    return dp[0];
+}
 ```
 
-
-// multiset insert logn, find O(1)
+糟糕的写法
+// 习惯用 -1 作为行遍历结束的标志
 ```cpp
-class medianFinder{
-private:
-    multiset<int> data;
-    multiset<int>::iterator mid;
-    
-public:
-    medianFinder():mid(data.end()){
+// 220 ms
+static const int MAXN=1e6+5; // static must
+int minJump(vector<int>& jump){
+    int vis[MAXN]={0};
+    int res=1;
+    queue<int> q;
+    q.push(0);
+    q.push(-1);
+    int tmp_max=0;
 
-    }
-
-    void addNum(int num){
-        const int n = data.size();
-        data.insert(num);
-        
-        if(!n){ // first element insert
-            mid = data.begin();
-        }
-        else if(num< *mid){
-            mid = (n&1? mid: prev(mid));
+    while(1){
+        int e = q.front();
+        q.pop();
+        // cout << "e" << e << endl;
+        // cout << "res " << res << endl;
+        // cout << "tmp_max " << tmp_max << endl;
+        if(e==-1){
+            res++;
+            q.push(-1);
         }
         else{
-            mid = (n&1? next(mid): mid);
+            for(int j=tmp_max+1; j<e; j++){
+                if(!vis[j]){
+                    q.push(j);
+                    vis[j]=1;
+                }
+            }
+            int tmp=e +jump[e];
+            if(tmp >= jump.size()) break; // >= out of dip
+            else{
+                if(!vis[tmp]){
+                    q.push( tmp);
+                    vis[tmp] =1;
+                }
+            }
+            tmp_max = max(tmp_max, e);
         }
     }
-
-    double findmedian(){
-        const int n = data.size();
-        return (*mid + *next(mid, n%2-1))*0.5;
-    }
-};
-
+    return res;
+}
 ```
+
+
+
+
+LCP 24 数字游戏
+
+q0 表示小的那一半的元素的优先队列， 大顶堆。
+q1 表示大的那一半的元素的优先队列。
+
+默认降序，大顶堆。下面两句等价。
+priority_queue<int, vector<int>, less<int>> q0; // dsc
+priority_queue q0;
+
+
+维护中位数，time nlogn, space n
+两个优先队列来实时维护中位数
 
 ```cpp
-class medianFinder{
-private:
-    vector<int> store;
-
-public:
-    void addNum(int num){
-        if(store.empty()) store.push_back(num);
-        else store.insert(lower_bound(store.begin(), store.end(), num), num);  // logn + n
+typedef long long ll;
+static constexpr int mod=1e9+7;
+vector<int> numsGame(vector<int>& arr){
+    int n=arr.size();
+    if(n==1) return {0};
+    for(int i=0; i<n; i++){
+        arr[i] -= i; //
     }
 
-    double findmedian(){
-        sort((store.begin(), store.end()));
-        int n = store.size();
-        return (n&1? store[n/2]: (store[n/2]+store[n/2-1])*0.5);
+    priority_queue<int, vector<int>, less<int>> q0; // dsc
+    priority_queue<int, vector<int>, greater<int>> q1; // asc
+    q0.push( min(arr[0], arr[1]));
+    q1.push( max(arr[0], arr[1]));
+    ll sum0 = q0.top();
+    ll sum1 = q1.top();
+
+    vector<int> res;
+    res.push_back(0);
+    res.push_back(static_cast<int>(sum1 -sum0));
+    
+    for(int i=2; i<n; i++){
+        if(arr[i] <= q0.top()){
+            q0.push( arr[i]);
+            sum0 += arr[i];
+        }
+        else{
+            q1.push( arr[i]);
+            sum1 += arr[i];
+        }
+
+        if(q0.size()== q1.size()+2){
+            int u=q0.top();
+            q0.pop();
+            sum0 -= u;
+
+            q1.push( u);
+            sum1 += u;
+        }
+        else if(q0.size()+1 ==q1.size()){
+            int u=q1.top();
+            q1.pop();
+            sum1 -= u;
+
+            q0.push(u);
+            sum0 += u;
+        }
+
+        ll delta = (i&1)? sum1-sum0: sum1-sum0+q0.top();
+        res.push_back(delta %mod);
     }
-};
+    return res;
+}
 ```
 
+LCP 25 古董键盘
 
+dp
 ```cpp
-// bad
-vector<double> stone;
+typedef long long ll;
+static const int mod=1e9+7;
 
-void addNum(int num){
-    store.push_back(num);
+int keyboard(int k, int n){
+    vector<vector<ll>> dp(n+1, vector<ll>(27, 0L));
+    for(int i=0; i<=26; i++) dp[0][i]=1;
+
+    for(int i=1; i<=n; i++){
+        for(int j=1; j<=26; j++){
+            for(int t=0; t<=k; t++){
+                if(i-t >=0)  dp[i][j] += dp[i-t][j-1]*combine(i, t);
+            }
+            dp[i][j] %=mod;
+        }
+    }
+    return dp[n][26];
 }
 
-double findmedian(){
-    sort((store.begin(), store.end()));
-    int n = store.size();
-    return (n&1? store[n/2]: (store[n/2]+store[n/2-1])*0.5);
+ll combine(int m, int n){
+    int k=1;
+    ll res=1;
+    while(k<=n){
+        res =((m-k+1)*res)/k;
+        k++;
+    }
+    return res;
 }
 
 ```
+
 
 LCP 26 导航装置
 
@@ -1002,18 +1242,224 @@ int maxWeight(vector<vector<int>>& edges, vector<int>& val) {
 ```
 
 
-LCP 24 数字游戏
+LCP 04 覆盖
 
-维护中位数，time nlogn, space n
-两个优先队列来实时维护中位数
+状压dp
+
+二分图最大匹配, 匈牙利算法
+将各个相邻的点进行二分，使用二分图最大匹配算法即可。
+```cpp
+// 4 ms
+static const int N=64;
+vector<int> e[N];
+int used[N];
+int matched[N];
+const int dir[5]= {-1,0,1,0,-1};
+bool dfs(int u){
+    for(auto& v: e[u]){
+        if(used[v]) continue; // 
+
+        used[v] =true;
+        if( matched[v]==-1 || dfs(matched[v])){
+            matched[v] = u;
+            return true;
+        }
+    }
+    return false;
+}
+
+int domino(int n, int m, vector<vector<int>>& broken){
+    // int br[n][m] ={};
+    vector<vector<int>> br(n, vector<int>(m, 0));
+    for(auto& b: broken) br[b[0]][b[1]]=1;
+    
+    vector<int> bg;
+    for(int i=0; i<n; i++){
+        for(int j=i%2; j<m; j+=2){ //
+            if( br[i][j]==1) continue;
+            
+            bg.push_back(i*m +j);
+            for(int k=0; k<4; k++){
+                int ki = i+dir[k];
+                int kj = j+dir[k+1];
+                if(ki==-1 || kj==-1 || ki==n || kj==m || br[ki][kj]==1) continue;
+                e[i*m + j].push_back( ki*m + kj);
+            }
+        }
+    }
+
+    memset(matched, -1, sizeof(matched)); //
+    int res=0;
+    for(auto& i: bg){
+        memset(used, 0, sizeof(used));
+        if( dfs(i)) res++;
+    }
+    return res;
+}
+```
+
+time n*(4^m)
+space n*(2^m)
+dp数组 n*2^m 项，填充每项的time 为 2^m
+
+// dp[i][status],i 代表到第 i 行,status 代表当前行的覆盖情况
+// bricks(x) 最多横着放的砖块计数
+必须把 x==0 的判断用if 逻辑，而非放在for中。后者会导致少一次。
+input
+3
+2
+[[1, 1], [2, 1]]
+
+expect -> 2
 
 ```cpp
-typedef long long ll;
-static constexpr int mod=1e9+7;
-vector<int> numsGame(vector<int>& arr){
-    int n=arr.size();
-    if(n==1) return {0};
+// 0 ms
+int ones(int x){
+    int res=0;
+    for(; x!=0; x= (x&(x-1)))  ++res;
+    return res;
+}
+
+int bricks(int x){
+    int res=0;
+    while(x){
+        int j= x& (-x);
+        if( x& (j<<1)) ++res;
+        x &= (~j);
+        x &= ~(j<<1);
+    }
+    return res;
+}
+
+int domino(int n, int m, vector<vector<int>>& broken){
+    int m1 = 1<<m;
+    int max_v=0;
+    vector<int> br(n+1, 0);
+    vector<vector<int>> dp(n+1, vector<int>(1<<m, 0));
+    dp[n][m1-1]=0;
+    br[n]=m1-1;  // last line.
     
+    for(auto v: broken) br[v[0]] |=(1<<v[1]);
+
+    for(int l=n-1; l>=0; l--){
+        for(int st=(~br[l])&(m1-1); ; st=(st-1)&(~br[l]) ){
+            int max_cnt=0;
+            int s = st & (~br[l+1]);
+            for(int k=s; ; k=(k-1) &s){
+                max_cnt = max(ones(k)+bricks(st& (~k)) + dp[l+1][br[l+1]|k], max_cnt);
+                if(k==0) break; //
+            }
+            dp[l][(~st)&(m1-1)] =max_cnt;
+            if(st==0) break;  // must
+        }
+    }
+    for(int i=0; i<m1; i++) max_v=max(max_v, dp[0][i]);
+    return max_v;
+}
+```
+
+
+LCP 21 追逐游戏
+bfs + dfs + 环
+
+分情况讨论
+ab右边，直接结束。
+有环，且环长度 >=4, 无法抓住b
+一定能抓住。如果一个点到A的最短距离大于到B的最短距离加一, 这个点就是B可以安全到达的点。
+
+```cpp
+// 488 ms defeat 100%
+#define INF 0x3f3f3f3f
+
+class Solution{
+public:
+vector<vector<int>> adj;
+vector<int> depth;
+vector<int> pa;
+vector<bool> in_loop;
+int m;
+int loop=0;
+
+void dfs(int u, int p){
+    pa[u] =p; //
+    depth[u] = depth[p] +1;
+    
+    for(int v: adj[u]){
+        if(v==p) continue;
+        
+        if(!depth[v]) dfs(v, u);
+        else if(depth[v] < depth[u]){ // circle exists if find auti-edge
+            int cu = u;  
+            while( cu!=v){
+                in_loop[cu]=true;
+                loop++;
+                cu = pa[cu];
+            }
+            in_loop[v] = true;
+            loop++; // 
+        }
+    }
+}
+
+// find shortest dist of all points to u if detect_loop=true
+// find circle start point otherwise.
+vector<int> bfs(int u, bool detect_loop){
+    vector<int> dist(m+1, INF);
+    queue<int> q;
+    dist[u] =0;
+    q.push(u);
+    while( !q.empty()){
+        int x =q.front();
+        q.pop();
+        
+        if(detect_loop && in_loop[x]) return {x, dist[x]};
+        for(int y: adj[x]){
+            if(dist[y] <= dist[x]+1) continue;
+            dist[y] = dist[x] +1;
+            q.push(y);
+        }
+    }
+    return dist;
+}
+
+int chaseGame(vector<vector<int>>& edges, int bg_a, int bg_b){
+    m = edges.size();
+    adj = vector<vector<int>>(m+1);
+    for(auto& e: edges){
+        adj[e[0]].emplace_back(e[1]);
+        adj[e[1]].emplace_back(e[0]);
+        // catch if bg-ed edge
+        if(e[0]==bg_a && e[1]==bg_b) return 1;
+        if(e[1]==bg_a && e[0]==bg_b) return 1;
+    }
+    // dfs find circle
+    depth =vector<int>(m+1);
+    pa =vector<int>(m+1);
+    in_loop =vector<bool>(m+1);
+    dfs(1, 0);
+
+    // bfs to get shortest dist of a-b
+    vector<int> da =bfs(bg_a, false);
+    vector<int> db =bfs(bg_b, false);
+    // can't catch b if circle len >=4
+    if(loop>=4){
+        vector<int> qb =bfs(bg_b, true);  // find bg of circle
+        if(qb[1]+1 < da[ qb[0]])  return -1;
+    }
+
+    // can catch b.
+    int res=0;
+    for(int i=1; i<=m; i++){
+        if(da[i] > db[i]+1) res=max(res, da[i]);
+    }
+    return res;
+}
+};
+```
+
+```cpp
+vector<int> numGame(vector<int>& nums){
+
 }
 ```
 
@@ -1025,18 +1471,3 @@ vector<int> numsGame(vector<int>& arr){
 
 ```
 
-```cpp
-
-```
-
-```cpp
-
-```
-
-```cpp
-
-```
-
-```cpp
-
-```

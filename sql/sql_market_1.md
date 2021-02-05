@@ -87,23 +87,50 @@ from users u left join(
 on u.user_id=b.buyer_id;
 ```
 
+1321 餐馆营业额变化增长
+customer_table:
+customer_id, name, visited_on, amount
+
+想分析一下可能的营业额变化增长（每天至少有一位顾客）
+
+查询计算以 7 天（某日期 + 该日期前的 6 天）为一个时间段的顾客消费平均值
 
 
-
+窗口函数
 ```sql
-
+select visited_on, amount,average_amout
+from(
+    select visited_on,
+    sum(total) over(order by visited_on rows between )
+)
 
 
 ```
 
+自连接
+```sql
+select a.visited_on, 
+        sum(b.amount) amount, 
+        round(sum(b.amout)/7,2) average_amount
+from (select distinct visited_on from customer) a
+join customer b on datediff(a.visited_on, b.visited_on) between 0 and 6
+where a.visited_on >= (select min(visited_on) from customer) +6
+group by a.visited_on
+
+```
+
+1126 查询活跃业务
+events_table:
+business_id, event_type, occurences
+代表 业务id，事件，次数
+
+
+如果一个业务的某个事件类型的发生次数大于此事件类型在所有业务中的平均发生次数，并且该业务至少有两个这样的事件类型，那么该业务就可被看做是活跃业务。
+
 ```sql
 
 ```
 
-
-```sql
-
-```
 
 ```sql
 
